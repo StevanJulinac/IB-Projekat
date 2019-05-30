@@ -1,4 +1,4 @@
-package sendReceive;
+package sign;
 
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
@@ -50,7 +50,7 @@ import org.xml.sax.SAXException;
 
 import model.Image;
 import model.Xml;
-import sendReceive.Test;
+import sign.Test;
 
 public class Receive {
 	
