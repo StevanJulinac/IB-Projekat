@@ -17,30 +17,43 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import model.Image;
+import model.Xml;
 
 public class Test {
 	
 	public static void main(String argv[]) {
+		 
+		}
+
+	static void CreateXML(){
+		
 		try {
-		    DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
-		    DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-		
-		    //root elements
-		    Document doc = docBuilder.newDocument();
-		
-		    Element user = doc.createElement("user");
+
+			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+
+			// root elements
+			Document doc = docBuilder.newDocument();
+			//Element rootElement = doc.createElement("company");
+			//doc.appendChild(rootElement);
+
+			// user elements
+			Element user = doc.createElement("user");
 		    doc.appendChild(user);
-		    
-		    //set attribute to user element
+
+			//set attribute to user element
 		    Attr username = doc.createAttribute("username");
 		    username.setValue("Pera");
 		    user.setAttributeNode(username);
-		
-		    for (Image i : Receive.xml.getImages()) {
-			    //image elements
-			    Element img = doc.createElement("img");
+
+		    
+		    
+		    for (Image i : Xml.getImages()){
+		    						
+				// img elements
+				Element img = doc.createElement("img");
 			    user.appendChild(img);
-			
+	
 			    //set attribute to image element
 			    Attr name = doc.createAttribute("imgname");
 			    name.setValue(i.getName());
@@ -56,32 +69,28 @@ public class Test {
 			    hash.setValue(i.getHash());
 			    img.setAttributeNode(hash);
 		    }
-		    //date elements
-		    Element date = doc.createElement("date");
-		    user.appendChild(date);
-		    
-		    //set attribute to date element
-		    Attr datee = doc.createAttribute("datee");
-		    datee.setValue("1");
-		    date.setAttributeNode(datee);
+
+			// write the content into xml file
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File("C:/Users/Stiv/git/BEZBEDNOST_PROJEKAT/IB-Projekat/Desktop/Desktop/data/test.xml"));
+
+			// Output to console for testing
+			// StreamResult result = new StreamResult(System.out);
+
+			transformer.transform(source, result);
+
+			System.out.println("File saved!");
+
+		  } catch (ParserConfigurationException pce) {
+			pce.printStackTrace();
+		  } catch (TransformerException tfe) {
+			tfe.printStackTrace();
+		  } 
+			
 		
-		    //write the content into xml file
-		    TransformerFactory transformerFactory =  TransformerFactory.newInstance();
-		    Transformer transformer = transformerFactory.newTransformer();
-		    DOMSource source = new DOMSource(doc);
-		
-		    StreamResult result =  new StreamResult(new File("C:/Users/Pecar/git/AAAAAAAAAAAA/IB-Projekat/Desktop/Desktop/data/test.xml"));
-		    transformer.transform(source, result);
-		
-		    System.out.println("Done");
-		    for(Image i : Receive.xml.getImages()){
-		    	System.out.println(i.getName());
-		    }
-		    
-		}catch(ParserConfigurationException pce){
-		    pce.printStackTrace();
-		}catch(TransformerException tfe){
-		    tfe.printStackTrace();
-		}
-    }
+	}
+	
+
 }

@@ -6,13 +6,14 @@ import java.util.Date;
 public class Xml {
 
 	private String username;
-	private ArrayList<Image> images;
+	private static ArrayList<Image> images;
+	
 	//private Date date;
 	
 	public Xml(String username, ArrayList<Image> images) {
 		super();
 		this.username = username;
-		this.images = images;
+		Xml.images = images;
 		//this.date = date;
 	}
 
@@ -24,12 +25,12 @@ public class Xml {
 		this.username = username;
 	}
 
-	public ArrayList<Image> getImages() {
+	public static ArrayList<Image> getImages() {
 		return images;
 	}
 
 	public void setImages(ArrayList<Image> images) {
-		this.images = images;
+		Xml.images = images;
 	}
 
 //	public Date getDate() {
