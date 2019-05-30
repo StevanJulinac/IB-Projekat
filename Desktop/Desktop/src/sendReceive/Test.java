@@ -74,7 +74,7 @@ public class Test {
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();
 			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File("C:/Users/Stiv/git/BEZBEDNOST_PROJEKAT/IB-Projekat/Desktop/Desktop/data/test.xml"));
+			StreamResult result = new StreamResult(new File("C:/Users/Pecar/git/opet/IB_Project/Desktop/Desktop/data/test.xml"));
 
 			// Output to console for testing
 			// StreamResult result = new StreamResult(System.out);

@@ -14,9 +14,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.Security;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -25,6 +27,7 @@ import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -32,9 +35,18 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.xml.security.exceptions.XMLSecurityException;
+import org.apache.xml.security.signature.XMLSignature;
+import org.apache.xml.security.signature.XMLSignatureException;
+import org.apache.xml.security.transforms.TransformationException;
+import org.apache.xml.security.transforms.Transforms;
+import org.apache.xml.security.utils.Constants;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Attr;
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import model.Image;
 import model.Xml;
@@ -46,12 +58,20 @@ public class Receive {
 	public static Xml xml;
     static final File dir = new File("C:/IB_Slike");
     
+    private static final String IN_FILE = "./data/test.xml";
     private static final String KEY_STORE_FILE = "./data/primer.jks";
+    
+    static {
+      	//staticka inicijalizacija
+          Security.addProvider(new BouncyCastleProvider());
+          org.apache.xml.security.Init.init();
+    }
 
     // lista podrzanih ekstenzija
     static final String[] EXTENSIONS = new String[]{
         "png", "bmp", "jpg" 
     };
+    
     // filter za identifikaciju slika na osnovu njihovih ekstenzija
     static final FilenameFilter IMAGE_FILTER = new FilenameFilter() {
 
@@ -67,8 +87,44 @@ public class Receive {
     };
     
     public void Start() throws NoSuchAlgorithmException, Exception{
+    	Document doc = loadDocument(IN_FILE);
+    	
+    	PrivateKey pk = readPrivateKey();
+    	
+    	Certificate cert = readCertificate();
+    	
+    	System.out.println("Signing....");
+		doc = signDocument(doc, pk, cert);
+		
     	BuildXML();
     }
+    
+    
+    /**
+	 * Kreira DOM od XML dokumenta
+	 */
+	private Document loadDocument(String file) {
+		try {
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			dbf.setNamespaceAware(true);
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document document = db.parse(new File(file));
+
+			return document;
+		} catch (FactoryConfigurationError e) {
+			e.printStackTrace();
+			return null;
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+			return null;
+		} catch (SAXException e) {
+			e.printStackTrace();
+			return null;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
     
 
 	private void BuildXML() throws NoSuchAlgorithmException, Exception {
@@ -197,5 +253,59 @@ public class Receive {
 			e.printStackTrace();
 			return null;
 		} 
+	}
+	
+	
+	private Document signDocument(Document doc, PrivateKey privateKey, Certificate cert) {
+	      
+		try {
+			Element rootEl = doc.getDocumentElement();
+			
+			//kreira se signature objekat
+			XMLSignature sig = new XMLSignature(doc, null, XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA1);
+			
+			//kreiraju se transformacije nad dokumentom
+			Transforms transforms = new Transforms(doc);
+			    
+			//iz potpisa uklanja Signature element
+			//Ovo je potrebno za enveloped tip po specifikaciji
+			transforms.addTransform(Transforms.TRANSFORM_ENVELOPED_SIGNATURE);
+			
+			//normalizacija
+			transforms.addTransform(Transforms.TRANSFORM_C14N_WITH_COMMENTS);
+			    
+			//potpisuje se citav dokument (URI "")
+			sig.addDocument("", transforms, Constants.ALGO_ID_DIGEST_SHA1);
+			    
+			//U KeyInfo se postavalja Javni kljuc samostalno i citav sertifikat
+			sig.addKeyInfo(cert.getPublicKey());
+			sig.addKeyInfo((X509Certificate) cert);
+			    
+			//poptis je child root elementa
+			rootEl.appendChild(sig.getElement());
+			
+			//potpisivanje
+				sig.sign(privateKey);
+				
+				return doc;
+				
+		} catch (TransformationException e) {
+			e.printStackTrace();
+			return null;
+		} catch (XMLSignatureException e) {
+			e.printStackTrace();
+			return null;
+		} catch (DOMException e) {
+			e.printStackTrace();
+			return null;
+		} catch (XMLSecurityException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static void main(String[] args) throws NoSuchAlgorithmException, Exception {
+		Receive receive = new Receive();
+		receive.Start();
 	}
 }
