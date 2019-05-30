@@ -1,14 +1,20 @@
 package sendReceive;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -26,6 +32,7 @@ public class Test {
 		}
 
 	static void CreateXML(){
+		final String OUT_FILE = "./data/testSigned.xml";
 		
 		try {
 
@@ -70,27 +77,52 @@ public class Test {
 			    img.setAttributeNode(hash);
 		    }
 
+		    saveDocument(doc, OUT_FILE);
+			System.out.println("Signing of document done");
 			// write the content into xml file
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(new File("C:/Users/Pecar/git/opet/IB_Project/Desktop/Desktop/data/test.xml"));
-
+			
 			// Output to console for testing
-			// StreamResult result = new StreamResult(System.out);
+			// StreamResult result = new StreamResult(System.out);			
+		}
+		
+		catch (ParserConfigurationException pce) {
+            pce.printStackTrace();
+          }
+	}
 
+	/**
+	 * Snima DOM u XML fajl 
+	 */
+	private static void saveDocument(Document doc, String fileName) {
+		try {
+			File outFile = new File(fileName);
+			FileOutputStream f = new FileOutputStream(outFile);
+
+			TransformerFactory factory = TransformerFactory.newInstance();
+			Transformer transformer = factory.newTransformer();
+			
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(f);
+			
 			transformer.transform(source, result);
 
-			System.out.println("File saved!");
+			f.close();
 
-		  } catch (ParserConfigurationException pce) {
-			pce.printStackTrace();
-		  } catch (TransformerException tfe) {
-			tfe.printStackTrace();
-		  } 
-			
-		
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (TransformerConfigurationException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (TransformerFactoryConfigurationError e) {
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
-	
 
 }
