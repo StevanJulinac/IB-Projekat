@@ -6,8 +6,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
@@ -30,8 +34,10 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
@@ -51,15 +57,17 @@ import org.xml.sax.SAXException;
 import model.Image;
 import model.Xml;
 import sign.Test;
+import sign.Zip;
 
 public class Receive {
-	
-	private static ArrayList<Image> images = new ArrayList<Image>();
-	public static Xml xml;
-    static final File dir = new File("C:/IB_Slike");
     
-    private static final String IN_FILE = "./data/test.xml";
-    private static final String KEY_STORE_FILE = "./data/primer.jks";
+    private static final String IN_FILE = "./data/test47.xml";
+    private static final String OUT_FILE = "./data/Slike/test47Signed.xml";
+    private static final String KEY_STORE_FILE = "./data/gosa.jks";
+    
+    Zip zf = new Zip();
+    String folderToZip = "./data/Slike";
+    String zipName = "./data/ZippedFiles.zip";
     
     static {
       	//staticka inicijalizacija
@@ -67,26 +75,9 @@ public class Receive {
           org.apache.xml.security.Init.init();
     }
 
-    // lista podrzanih ekstenzija
-    static final String[] EXTENSIONS = new String[]{
-        "png", "bmp", "jpg" 
-    };
-    
-    // filter za identifikaciju slika na osnovu njihovih ekstenzija
-    static final FilenameFilter IMAGE_FILTER = new FilenameFilter() {
-
-        @Override
-        public boolean accept(final File dir, final String name) {
-            for (final String ext : EXTENSIONS) {
-                if (name.endsWith("." + ext)) {
-                    return (true);
-                }
-            }
-            return (false);
-        }
-    };
     
     public void Start() throws NoSuchAlgorithmException, Exception{
+    	
     	Document doc = loadDocument(IN_FILE);
     	
     	PrivateKey pk = readPrivateKey();
@@ -96,7 +87,10 @@ public class Receive {
     	System.out.println("Signing....");
 		doc = signDocument(doc, pk, cert);
 		
-    	BuildXML();
+    	saveDocument(doc, OUT_FILE);
+    	System.out.println("Signing of document done");
+    	
+    	zf.zip(Paths.get(folderToZip), Paths.get(zipName));
     }
     
     
@@ -124,49 +118,7 @@ public class Receive {
 			e.printStackTrace();
 			return null;
 		}
-	}
-    
-
-	private void BuildXML() throws NoSuchAlgorithmException, Exception {
-        if (dir.isDirectory()) { 
-            for (final File f : dir.listFiles(IMAGE_FILTER)) {
-         
-
-                try {
-                   
-                    BufferedImage buffImg = ImageIO.read(f);
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    ImageIO.write(buffImg, "jpg", outputStream);
-                    byte[] data = outputStream.toByteArray();
-
-                    MessageDigest md = MessageDigest.getInstance("MD5");
-                    md.update(data);
-                    byte[] hash = md.digest();                    
-                    
-                    Image image = new Image(f.getName(), f.length(), returnHex(hash));
-                    images.add(image);
-
-                } catch (final IOException e) {
-                    // handle errors here
-                }
-            }
-            xml = new Xml("username", images);
-        }
-        
-        Test.CreateXML();
-     
-    }
-    
-    
-    static String returnHex(byte[] inBytes) throws Exception {
-        String hexString = "";
-        for (int i=0; i < inBytes.length; i++) { 
-            hexString +=
-            Integer.toString( ( inBytes[i] & 0xff ) + 0x100, 16).substring( 1 );
-        }                                 
-    return hexString;
-    }
-    
+	}    
     
     /**
 	 * Ucitava privatni kljuc is KS fajla
@@ -176,13 +128,12 @@ public class Receive {
 		try {
 			//kreiramo instancu KeyStore
 			KeyStore ks = KeyStore.getInstance("JKS", "SUN");
-			
 			//ucitavamo podatke
 			BufferedInputStream in = new BufferedInputStream(new FileInputStream(KEY_STORE_FILE));
-			ks.load(in, "primer".toCharArray());
+			ks.load(in, "gosa10".toCharArray());
 			
-			if(ks.isKeyEntry("primer")) {
-				PrivateKey pk = (PrivateKey) ks.getKey("primer", "primer".toCharArray());
+			if(ks.isKeyEntry("gosa")) {
+				PrivateKey pk = (PrivateKey) ks.getKey("gosa", "gosa10".toCharArray());
 				return pk;
 			}
 			else
@@ -221,16 +172,15 @@ public class Receive {
 		try {
 			//kreiramo instancu KeyStore
 			KeyStore ks = KeyStore.getInstance("JKS", "SUN");
-			
 			//ucitavamo podatke
 			BufferedInputStream in = new BufferedInputStream(new FileInputStream(KEY_STORE_FILE));
-			ks.load(in, "primer".toCharArray());
+			ks.load(in, "gosa10".toCharArray());
 			
-			if(ks.isKeyEntry("primer")) {
-				Certificate cert = ks.getCertificate("primer");
+			if(ks.isKeyEntry("gosa")) {
+				Certificate cert = ks.getCertificate("gosa");
 				return cert;
 				
-			}
+			}	
 			else
 				return null;
 			
@@ -259,18 +209,16 @@ public class Receive {
 	private Document signDocument(Document doc, PrivateKey privateKey, Certificate cert) {
 	      
 		try {
-			Element rootEl = doc.getDocumentElement();
+Element rootEl = doc.getDocumentElement();
 			
 			//kreira se signature objekat
 			XMLSignature sig = new XMLSignature(doc, null, XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA1);
-			
 			//kreiraju se transformacije nad dokumentom
 			Transforms transforms = new Transforms(doc);
 			    
 			//iz potpisa uklanja Signature element
 			//Ovo je potrebno za enveloped tip po specifikaciji
 			transforms.addTransform(Transforms.TRANSFORM_ENVELOPED_SIGNATURE);
-			
 			//normalizacija
 			transforms.addTransform(Transforms.TRANSFORM_C14N_WITH_COMMENTS);
 			    
@@ -283,11 +231,11 @@ public class Receive {
 			    
 			//poptis je child root elementa
 			rootEl.appendChild(sig.getElement());
-			
+			    
 			//potpisivanje
-				sig.sign(privateKey);
-				
-				return doc;
+			sig.sign(privateKey);
+			
+			return doc;
 				
 		} catch (TransformationException e) {
 			e.printStackTrace();
@@ -301,6 +249,41 @@ public class Receive {
 		} catch (XMLSecurityException e) {
 			e.printStackTrace();
 			return null;
+		}
+	}
+	
+	/**
+	 * Snima DOM u XML fajl 
+	 */
+	private static void saveDocument(Document doc, String fileName) {
+		try {
+			File outFile = new File(fileName);
+			FileOutputStream f = new FileOutputStream(outFile);
+
+			TransformerFactory factory = TransformerFactory.newInstance();
+			Transformer transformer = factory.newTransformer();
+			
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(f);
+			
+			transformer.transform(source, result);
+
+			f.close();
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (TransformerConfigurationException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (TransformerFactoryConfigurationError e) {
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	

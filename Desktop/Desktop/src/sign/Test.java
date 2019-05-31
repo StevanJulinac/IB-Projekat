@@ -31,8 +31,7 @@ public class Test {
 		 
 		}
 
-	static void CreateXML(){
-		final String OUT_FILE = "./data/testSigned.xml";
+	static void CreateXML(){	
 		
 		try {
 
@@ -76,9 +75,17 @@ public class Test {
 			    hash.setValue(i.getHash());
 			    img.setAttributeNode(hash);
 		    }
-
-		    saveDocument(doc, OUT_FILE);
-			System.out.println("Signing of document done");
+		    
+		    
+			
+			DOMSource source = new DOMSource(doc);
+			StreamResult result = new StreamResult(new File("./data/test.xml"));
+			
+			TransformerFactory factory = TransformerFactory.newInstance();
+			Transformer transformer = factory.newTransformer();
+			
+			transformer.transform(source, result);
+			
 			// write the content into xml file
 			
 			// Output to console for testing
@@ -87,7 +94,13 @@ public class Test {
 		
 		catch (ParserConfigurationException pce) {
             pce.printStackTrace();
-          }
+          } catch (TransformerConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
