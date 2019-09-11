@@ -1,5 +1,6 @@
 package ib.project.rest;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,9 +8,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.ResourceBundle;
 
 import javax.servlet.ServletContext;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -18,7 +21,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @RestController
 @RequestMapping(value = "/api/demo", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -34,9 +41,36 @@ public class DemoController {
 		DATA_DIR_PATH = rb.getString("dataDir");
 	}
 
+//	@RequestMapping(method = RequestMethod.POST)
+//	public String singleFileUpload(@RequestParam("file") MultipartFile file,
+//            RedirectAttributes redirectAttributes){
+//		
+//		try {
+//			
+//			String putanja = "C:/Users/Stiv/Desktop/IB_Projekat/IB-Projekat/Web/IB_Project_Shell/target/sent";
+//			
+//            byte[] bytes = file.getBytes();           
+//            
+//            //String directoryPath = getResourceFilePath(DATA_DIR_PATH).getAbsolutePath();
+//            
+//            Path path = Paths.get(putanja + file.getOriginalFilename());
+//            Files.write(path, bytes);
+//
+//            redirectAttributes.addFlashAttribute("message",
+//                    "You successfully uploaded '" + file.getOriginalFilename() + "'");
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return "redirect:/uploadStatusWAGAWAGA";
+//    }
+	
+	
 	@RequestMapping(method = RequestMethod.POST)
 	public ResponseEntity<String> createAFileInResources() throws IOException {
 		byte[] content = "Content".getBytes();
+		
 
 		String directoryPath = getResourceFilePath(DATA_DIR_PATH).getAbsolutePath();
 
